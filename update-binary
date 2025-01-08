@@ -27,11 +27,12 @@ ps | grep zygote | grep -v grep >/dev/null && BOOTMODE=true || BOOTMODE=false
 $BOOTMODE || ps -A 2>/dev/null | grep zygote | grep -v grep >/dev/null && BOOTMODE=true
 $BOOTMODE && abort "You need to flash this Firmware from recovery!"
 
-ui_print "*******************************************"
-ui_print "* Oneplus 8t EU KB2003 Firmware Flasher   *"
-ui_print "*                                         *"
-ui_print "*        v1.3 by Wishmasterflo            *"
-ui_print "*******************************************"
+ui_print "***************************************"
+ui_print "*  Nothing Phone (2) Firmware Flasher *"
+ui_print "*    Build: <Mentioned in filename>   *"
+ui_print "*   Initial Script by Wishmasterflo   *"
+ui_print "*     Adapted for Pong by spike0en    *"
+ui_print "***************************************"
 
 set -x
 rm -rf $tmp
@@ -73,11 +74,10 @@ else  ui_print "- Could not detect RAM type. Flashing aborted!"
 fi
 
 ui_print " "
-ui_print "****************************"
-ui_print "Device: Oneplus 8t"
-ui_print "Region: EU"
-ui_print "Firmware flash: OOS13 F15"
-ui_print "****************************"
+ui_print "**********************************************"
+ui_print "Device: Nothing Phone 2 (Pong)"
+ui_print "Target NOS Build: <Mentioned in filename>"
+ui_print "**********************************************"
 ui_print " "
 ui_print "Continue? Vol+ yes, Vol- no"
 chooseport && flash=true|| exit 0
@@ -164,10 +164,5 @@ fi
 rm -rf /dev/tmp
 ui_print " "
 ui_print "Firmware flashing completed!"
-ui_print "If you want to flash a new ROM do that now before rebooting."
-ui_print "                ___  "
-ui_print "              _/___\_"
-ui_print "              ( @ @ )"
-ui_print "**********o00o**(_)**o00o**********"
 
 exit 0
