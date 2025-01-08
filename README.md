@@ -1,84 +1,24 @@
-# Firmware Flasher for Oneplus devices
+# Firmware Flasher for Nothing Phone (2)
 
-I built an updated Version of the Firmware Flasher which will automatically detect the RAM type of your device and flash the correct
-Firmware files, so no need anymore to check the DDR RAM type before, now you can just go ahead and flash the needed Firmware you want to flash.
-The flasher will terminate if it can not detect the RAM type or the correct Device for the Firmware you want to flash so it is quite safe now to use it and should not cause any more bricks due to wrongly flashed Firmware.
+A Flashing script for Pong that flashes the firmware images to both A/B slots. It supports all regional variants (IND/EEA/GLO) of the device. The corresponding images have been fetched from [here](https://github.com/spike0en/nothing_archive) and repacked along with the script in a supported flashable template.
 
-# Download
-Firmware download with updated Firmware flasher: https://mega.nz/folder/W7JhwTAT#Yu6cxqvJcAC28cy0m_kkQA
-(use Standard download on Mega not download as ZIP, because then you get a ZIP file inside the ZIP file!)
+## Use Cases
+- This script is helpful when flashing custom ROM builds that require a specific firmware version but do not ship the same in the build itself.
+- [NothingMuch ROM](https://xdaforums.com/t/nothingmuchrom-for-nothing-phone-2.4623411/) can be easily dirty updated by flashing the firmware zip, followed by flashing the provided super and optional vbmeta images accordingly.
 
-Device type and region
-- XXX0 = China
-- XXX1 = India
-- XXX3 = Europe
-- XXX5 = Global/NA
-- XXX7 = T-Mobile Version
+## Flashing Procedure
+1. Download the firmware zip file corresponding to the target Nothing OS version (check the file name) from the download link given below.
+2. The firmware zip file can be flashed from a custom recovery via adb sideload or it can be directly flashed from the Internal Storage on the Phone (using TWRP/Orangefox).
+3. It doesn't matter which Nothing OS version you are on or if you are on a custom or stock ROM; you can just flash or sideload the firmware file.
+4. The script will automatically flash the firmware to both slots, so there's no need to flash it twice!
+5. Disable your antivirus scanner on Windows before adb sideloading the file.
+6. The Firmware flasher will not touch your data partition, so it will not format or modify your data.
 
-# Flashing procedure
-Download the firmware zip file for your Device and Region from the download link above. (use Standard download on Mega not download as ZIP!)
-The firmware zip file can be flashed from a custom recovery via adb sideload or it can be directly flashed from the Internal Storage on the Phone (using TWRP/Orangefox).
-It doesnt matter on which OOS Version you are or if you are on a custom ROM or Stock OOS, you can just flash or sideload the Firmware file.
-It gets flashed to both slots so no need to flash it twice!
-Disable your Virusscanner on Windows before adb sideloading the file!
-The Firmware Flasher will not touch your data partition so it will not format or do anything to your Data.
+## Download
+- [Sourceforge](https://sourceforge.net/projects/nothing-archive/files/Pong/recovery_flashable_firmware/)
+- [Internet Archive](https://archive.org/download/nothing-archive/pong_flashable_firmware/)
 
-# Features
- - automatic detection of RAM type
- - automatic detection of device type
- - The Firmware gets flashed to both A/B slots
- - Removes the yellow Bootloader message on all OOS13.x/OOS14 firmware files (on OP8 and OP9 series only)
- - For T-Mobile devices on OOS13.x it will enable the Dual SIM feature (on OP8 and OP9 series only)
- - Choice to Update modem.img or not (in 90% of the cases you choose yes here to update Modem)
-   Only in some cases where you want to cross flash a different region Firmware it could be needed
-   not to Update the modem.img as otherwise you might not have all 5G bands available for that region.
-  
-# Supported Devices
- - Oneplus 6 (enchilada)
- - Oneplus 6t (fajita)
- - Oneplus 7 GM190X (guacamoleb)
- - Oneplus 7 Pro GM191X (guacamole)
- - Oneplus 7t HD190X (hotdogb)
- - Oneplus 7t Pro HD191X (hotdog)
- - Oneplus 8 IN201X (instantnoodle)
- - Oneplus 8t KB200X (kebab)
- - Oneplus 8 Pro IN202X (instantnoodlep)
- - Oneplus 9 LE211X (lemonade)
- - Oneplus 9r LE210X (lemonades)
- - Oneplus 9 Pro LE212X (lemonadep)
- - Oneplus 10 Pro LE221X (wly)
- - The T-Mobile devices are supported as well. For those you would flash the NA/Global Firmware
- 
-# Changelog
-# 14-Mar-2023 v1.3
- - Changed device check method
- - Cleaned up some old Firmware files to free up space on Mega
 
-# 01-Feb-2023 v1.2
- - Added prompt to continue or cancel the Firmware flashing
- - Removed RAM check for all other devices (exept OP8t and OP9r) 
- - Added RAM check for OP8t and 9r on OOS11 as well
- - Make flashing of Modem.img optional
- - Some small adjustments to the flashing script
-
-# 25-Jan-2023 v1.1
- - Fixed typo in the flashing script
- - Cleaned up the flashing script
-
-# 22-Jan-2023 v1.0
- - Initial Version of the updated flashable Firmware script for Oneplus 8 series and Oneplus 9 series
- - OOS13 Firmware files are using abl.img from OOS13 F10 to remove the yellow bootloader message
- - Flasher should support Firmware flashing from all OOS12 and OOS13 Versions (OOS11 is not supported now!)
- - added automatic DDR RAM type detection (for Oneplus 8t/9r)
- - Flasher will terminate if it can not detect the correct RAM type for some reason
- - added a check that the Firmware flasher is flashed from recovery only
- - added device check that the Firmware is flashed on a supported device
- - Updated info that the Firmware is getting flashed to both slots (A and B)
-
-# Donate
-Donate if you like my work. 
-https://www.paypal.com/paypalme/Wishmasterflo
-
-##### Credits
-- Nixsuki for the initial Version of the Oneplus Flashable Firmwares
-- OPTeam for the Repo of OxygenOS builds
+## Credits
+- Nixsuki for the initial version of the Oneplus Flashable Firmwares.
+- [WishmasterFlo](https://github.com/Wishmasterflo) for the [Oneplus Firmware Flasher](https://github.com/Wishmasterflo/Firmware_flasher).
