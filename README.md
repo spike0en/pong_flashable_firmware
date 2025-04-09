@@ -1,6 +1,9 @@
-# Firmware Flasher for Nothing Phone (2)
+# Flashable Firmware for Nothing Phone (2)
 
-A Flashing script for Pong that flashes the firmware images to both A/B slots. It supports all regional variants (IND/EEA/GLO) of the device. The corresponding images have been fetched from [here](https://github.com/spike0en/nothing_archive) and repacked along with the script in a supported flashable template.
+- A collection of flashable firmwares for Nothing Phone (2) aka `Pong`. 
+- The firmware images are flashed to both A/B slots. 
+- It supports all regional variants (`IND`/`EEA`/`GLO`) of the device. 
+- The corresponding images have been fetched from [here](https://github.com/spike0en/nothing_archive) and repacked along with the script in a supported flashable template.
 
 ## Use Cases
 - This script is helpful when flashing custom ROM builds that require a specific firmware version but do not ship the same in the build itself.
@@ -15,8 +18,7 @@ A Flashing script for Pong that flashes the firmware images to both A/B slots. I
 6. The Firmware flasher will not touch your data partition, so it will not format or modify your data.
 
 ## Download
-- [Sourceforge](https://sourceforge.net/projects/nothing-archive/files/Pong/recovery_flashable_firmware/)
-- [Internet Archive](https://archive.org/download/nothing-archive/pong_flashable_firmware/)
+- Refer to the [releases](https://github.com/spike0en/pong_flashable_firmware/releases) section.
 
 
 ## Credits
