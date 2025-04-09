@@ -1,0 +1,61 @@
+# SPDX-FileCopyrightText: spike0en
+# SPDX-License-Identifier: MIT
+
+name: Pong Flashable Firmware
+
+on:
+  workflow_dispatch:
+    inputs:
+      post_ota_version:
+        description: 'POST_OTA_Version of Target Firmware (e.g., Pong_V3.0-241028-1925)'
+        required: true
+        type: string
+      nos_version:
+        description: 'Nothing OS Version (e.g., 3.0, 2.5.2A)'
+        required: true
+        type: string
+      boot_url:
+        description: 'Direct URL to *-image-boot.7z (Find in release at https://github.com/spike0en/nothing_archive)'
+        required: true
+        type: string
+      firmware_url:
+        description: 'Direct URL to *-image-firmware.7z (Find in release assets at https://github.com/spike0en/nothing_archive)'
+        required: true
+        type: string
+
+jobs:
+  pong-firmware-repack:
+    runs-on: ubuntu-latest
+    permissions: write-all
+    outputs:
+      zip_name: ${{ steps.repack.outputs.zip_name }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Installing dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y aria2 p7zip-full
+
+      - name: Make repack script executable
+        run: chmod +x scripts/repack.sh
+
+      - name: Repacking
+        id: repack
+        run: ./scripts/repack.sh
+        env:
+          POST_OTA_VERSION: ${{ inputs.post_ota_version }}
+          NOS_VERSION: ${{ inputs.nos_version }}
+          BOOT_URL: ${{ inputs.boot_url }}
+          FIRMWARE_URL: ${{ inputs.firmware_url }}
+
+      - name: Finalizing Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.post_ota_version }}_${{ inputs.nos_version }}
+          name: ${{ inputs.post_ota_version }}_${{ inputs.nos_version }}
+          body: ${{ inputs.post_ota_version }}_${{ inputs.nos_version }}
+          files: ${{ steps.repack.outputs.zip_name }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
