@@ -15,7 +15,7 @@ on:
         required: true
         type: string
       boot_url:
-        description: 'Direct URL to *-image-boot.7z (Find in release at https://github.com/spike0en/nothing_archive)'
+        description: 'Direct URL to *-image-boot.7z (Find in release assets at https://github.com/spike0en/nothing_archive)'
         required: true
         type: string
       firmware_url:
