@@ -17,7 +17,7 @@
 ## Use Cases
 
 - This script is helpful when flashing custom ROM builds that require a specific firmware version but do not ship the same in the build itself.
-- [NothingMuch ROM](https://xdaforums.com/t/nothingmuchrom-for-nothing-phone-2.4623411/) can be easily dirty updated by flashing the firmware zip, followed by flashing the provided super and optional vbmeta images accordingly.
+- [NothingMuch ROM](https://xdaforums.com/t/nothingmuchrom-for-nothing-phone-2.4623411/) can be easily dirty updated by flashing the firmware zip, followed by flashing the provided `super` and optional `vbmeta` images accordingly.
 
 ## Partitions
 
