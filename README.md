@@ -1,6 +1,14 @@
 # Flashable Firmware for Nothing Phone (2)
 
-- A collection of flashable firmwares for Nothing Phone (2) aka `Pong`. 
+[![Total Downloads](https://img.shields.io/github/downloads/spike0en/pong_flashable_firmware/total?logo=github&logoColor=white&label=Total%20Downloads&color=007377)](https://github.com/spike0en/pong_flashable_firmware/releases)
+[![Latest Release](https://img.shields.io/github/release/spike0en/pong_flashable_firmware?label=Latest%20Release&logo=git&logoColor=white&color=1E6091)](https://github.com/spike0en/pong_flashable_firmware/releases/latest)
+
+[![Stars](https://img.shields.io/github/stars/spike0en/pong_flashable_firmware?logo=github&color=D4AF37)](https://github.com/spike0en/pong_flashable_firmware/stargazers)
+[![Contributors](https://img.shields.io/github/contributors/spike0en/pong_flashable_firmware?logo=github&color=9B5DE5)](https://github.com/spike0en/pong_flashable_firmware/graphs/contributors)
+[![Forks](https://img.shields.io/github/forks/spike0en/pong_flashable_firmware?logo=github&color=468FAF)](https://github.com/spike0en/pong_flashable_firmware/network/members)
+
+## About 
+- This is a collection of flashable firmwares for Nothing Phone (2) aka `Pong`. 
 - The firmware images are flashed to both A/B slots. 
 - It supports all regional variants (`IND`/`EEA`/`GLO`) of the device. 
 - The corresponding images have been fetched from [here](https://github.com/spike0en/nothing_archive) and repacked along with the script in a supported flashable template.
