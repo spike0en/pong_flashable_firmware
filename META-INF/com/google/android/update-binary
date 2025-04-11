@@ -49,7 +49,7 @@ ui_print " "
 ui_print "Continue? Vol+ yes, Vol- no"
 chooseport && flash=true || exit 0
 
-# Function to flash a partition to both slots with error checking
+# Function to flash a partition to both slots, prompting on error
 flash_partition() {
   local partition_name=$1
   local image_file=$2
@@ -57,60 +57,76 @@ flash_partition() {
   local partition_path_b="/dev/block/bootdevice/by-name/${partition_name}_b"
   local source_image="$tmp/firmware-update/$image_file"
 
-  ui_print "Updating $partition_name..."
+  ui_print " "
+  ui_print "Processing $partition_name..."
 
   # Check if image file exists
   if [ ! -f "$source_image" ]; then
-    abort "Error: Image file $source_image not found in zip!"
+    ui_print "--> Error: Image file $source_image not found for $partition_name!"
+    ui_print "    Press Vol+ to skip flashing this partition and continue,"
+    ui_print "    Press Vol- to abort the entire script."
+    chooseport
+    if [ $? -ne 0 ]; then
+      abort "Aborting script due to missing image file and user choice."
+    else
+      ui_print "--> Skipping $partition_name due to missing image, continuing..."
+      return 0
   fi
 
   # Flash Slot A
+  ui_print "  Flashing $partition_name to slot A..."
   dd if="$source_image" of="$partition_path_a" bs=4k
   if [ $? -ne 0 ]; then
-    abort "Error flashing $partition_name to slot A!"
+    ui_print "--> Error flashing $partition_name to slot A!"
+    ui_print "    Press Vol+ to skip flashing this partition and continue,"
+    ui_print "    Press Vol- to abort the entire script."
+    chooseport
+    if [ $? -ne 0 ]; then
+      abort "Aborting script due to slot A error and user choice."
+    else
+      ui_print "--> Continuing to flashing the next partition despite slot A error..."
+      return 0
+    fi
   fi
 
   # Flash Slot B
+  ui_print "  Flashing $partition_name to slot B..."
   dd if="$source_image" of="$partition_path_b" bs=4k
   if [ $? -ne 0 ]; then
-    abort "Error flashing $partition_name to slot B!"
+    ui_print "--> Error flashing $partition_name to slot B!"
+    ui_print "    Press Vol+ to skip flashing this partition and continue,"
+    ui_print "    Press Vol- to abort the entire script."
+    chooseport
+    if [ $? -ne 0 ]; then
+      abort "Aborting script due to slot B partition flashing error and user choice."
+    else
+      ui_print "--> Continuing to flashing the next partition despite slot B error..."
+      return 0
+    fi
   fi
+
+  ui_print "  $partition_name flashed successfully to both slots."
 }
 
+# Define partition lists
+firmware_partitions="abl aop aop_config bluetooth cpucp devcfg dsp featenabler hyp imagefv keymaster modem multiimgoem multiimgqti qupfw qweslicstore shrm tz uefi uefisecapp xbl xbl_config xbl_ramdump"
+misc_partitions="boot dtbo vendor_boot vbmeta_vendor vbmeta_system"
+
 # Firmware partition images
-ui_print "Flashing Nothing OS firmware to both slots A and B..."
-flash_partition abl abl.img
-flash_partition aop aop.img
-flash_partition aop_config aop_config.img
-flash_partition bluetooth bluetooth.img
-flash_partition cpucp cpucp.img
-flash_partition devcfg devcfg.img
-flash_partition dsp dsp.img
-flash_partition featenabler featenabler.img
-flash_partition hyp hyp.img
-flash_partition imagefv imagefv.img
-flash_partition keymaster keymaster.img
-flash_partition modem modem.img
-flash_partition multiimgoem multiimgoem.img
-flash_partition multiimgqti multiimgqti.img
-flash_partition qupfw qupfw.img
-flash_partition qweslicstore qweslicstore.img
-flash_partition shrm shrm.img
-flash_partition tz tz.img
-flash_partition uefi uefi.img
-flash_partition uefisecapp uefisecapp.img
-flash_partition xbl xbl.img
-flash_partition xbl_config xbl_config.img
+ui_print " "
+ui_print "Flashing Nothing OS firmware partitions..."
+for partition in $firmware_partitions; do
+  flash_partition $partition ${partition}.img
+done
 ui_print "Firmware flashing complete!"
 
 # Misc partition images
-ui_print "Flashing some additionally required partition images to both slots A and B..."
-flash_partition boot boot.img
-flash_partition dtbo dtbo.img
-flash_partition vendor_boot vendor_boot.img
-flash_partition vbmeta_vendor vbmeta_vendor.img
-flash_partition vbmeta_system vbmeta_system.img
-ui_print "Additional partition flashing complete!"
+ui_print " "
+ui_print "Flashing miscellaneous partitions..."
+for partition in $misc_partitions; do
+  flash_partition $partition ${partition}.img
+done
+ui_print "Miscellaneous partition flashing complete!"
 
 # Cleanup tmp dir
 rm -rf /dev/tmp
