@@ -45,7 +45,42 @@ ui_print " Modified and adapted by spike0en."
 ui_print "========================================="
 ui_print " "
 ui_print "Continue? Vol+ yes, Vol- no"
-chooseport && flash=true || exit 0
+chooseport
+if [ $? -ne 0 ]; then
+  ui_print "User cancelled flashing."
+  rm -rf $tmp
+  exit 0
+fi
+ui_print "Proceeding with flash..."
+
+# Ask for target slots
+flash_target="both"
+ui_print " "
+ui_print "Select Target Slots:"
+ui_print " WARNING: Flashing a single slot is generally"
+ui_print "          not recommended unless you know exactly"
+ui_print "          what you are doing!"
+ui_print " "
+ui_print " -> Press Vol+ for BOTH Slots (Recommended)"
+ui_print " -> Press Vol- for SINGLE Slot"
+chooseport
+if [ $? -eq 1 ]; then
+  ui_print " "
+  ui_print "Select Single Slot Target:"
+  ui_print " -> Press Vol+ for Slot A"
+  ui_print " -> Press Vol- for Slot B"
+  chooseport
+  if [ $? -eq 0 ]; then
+    flash_target="a"
+    ui_print "Targeting SLOT A only."
+  else
+    flash_target="b"
+    ui_print "Targeting SLOT B only."
+  fi
+else
+  ui_print "Targeting BOTH slots A and B."
+fi
+ui_print " "
 
 # Function to flash a partition to both slots, prompting on error
 flash_partition() {
@@ -72,38 +107,53 @@ flash_partition() {
   fi
 
   # Flash Slot A
-  ui_print "  Flashing $partition_name to slot A..."
-  dd if="$source_image" of="$partition_path_a" bs=4k
-  if [ $? -ne 0 ]; then
-    ui_print "--> Error flashing $partition_name to slot A!"
-    ui_print "    Press Vol+ to skip flashing this partition and continue,"
-    ui_print "    Press Vol- to abort the entire script."
-    chooseport
+  if [ "$flash_target" = "both" ] || [ "$flash_target" = "a" ]; then
+    ui_print "  Flashing $partition_name to slot A..."
+    dd if="$source_image" of="$partition_path_a" bs=4k
     if [ $? -ne 0 ]; then
-      abort "Aborting script due to slot A error and user choice."
-    else
-      ui_print "--> Continuing to flashing the next partition despite slot A error..."
-      return 0
+      ui_print "--> Error flashing $partition_name to slot A!"
+      ui_print "    Press Vol+ to skip this partition and continue,"
+      ui_print "    Press Vol- to abort the entire script."
+      chooseport
+      if [ $? -ne 0 ]; then
+        abort "Aborting script due to slot A error and user choice."
+      else
+        ui_print "--> Continuing to next partition despite slot A error..."
+        return 0
+      fi
     fi
+  else
+    ui_print "  Skipping slot A flash for $partition_name as requested."
   fi
 
   # Flash Slot B
-  ui_print "  Flashing $partition_name to slot B..."
-  dd if="$source_image" of="$partition_path_b" bs=4k
-  if [ $? -ne 0 ]; then
-    ui_print "--> Error flashing $partition_name to slot B!"
-    ui_print "    Press Vol+ to skip flashing this partition and continue,"
-    ui_print "    Press Vol- to abort the entire script."
-    chooseport
+  if [ "$flash_target" = "both" ] || [ "$flash_target" = "b" ]; then
+    ui_print "  Flashing $partition_name to slot B..."
+    dd if="$source_image" of="$partition_path_b" bs=4k
     if [ $? -ne 0 ]; then
-      abort "Aborting script due to slot B partition flashing error and user choice."
-    else
-      ui_print "--> Continuing to flashing the next partition despite slot B error..."
-      return 0
+      ui_print "--> Error flashing $partition_name to slot B!"
+      ui_print "    Press Vol+ to skip this partition and continue,"
+      ui_print "    Press Vol- to abort the entire script."
+      chooseport
+      if [ $? -ne 0 ]; then
+        abort "Aborting script due to slot B error and user choice."
+      else
+        ui_print "--> Continuing to next partition despite slot B error..."
+        return 0
+      fi
     fi
+  else
+      ui_print "  Skipping slot B flash for $partition_name as requested."
   fi
 
-  ui_print "  $partition_name flashed successfully to both slots."
+  # Confirmation message based on what was flashed
+  if [ "$flash_target" = "both" ]; then
+    ui_print "  $partition_name flashed successfully to both slots."
+  elif [ "$flash_target" = "a" ]; then
+    ui_print "  $partition_name flashed successfully to slot A."
+  elif [ "$flash_target" = "b" ]; then
+    ui_print "  $partition_name flashed successfully to slot B."
+  fi
 }
 
 # Define partition lists
