@@ -104,6 +104,7 @@ flash_partition() {
     else
       ui_print "--> Skipping $partition_name due to missing image, continuing..."
       return 0
+    fi
   fi
 
   # Flash Slot A
