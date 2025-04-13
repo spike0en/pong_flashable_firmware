@@ -27,13 +27,6 @@ ps | grep zygote | grep -v grep >/dev/null && BOOTMODE=true || BOOTMODE=false
 $BOOTMODE || ps -A 2>/dev/null | grep zygote | grep -v grep >/dev/null && BOOTMODE=true
 $BOOTMODE && abort "You need to flash this from Orangefox Recovery!"
 
-ui_print "***************************************"
-ui_print "*  Nothing Phone (2) Firmware Flasher *"
-ui_print "*    Build: <Mentioned in filename>   *"
-ui_print "*   Initial Script by Wishmasterflo   *"
-ui_print "*     Adapted for Pong by spike0en    *"
-ui_print "***************************************"
-
 set -x
 rm -rf $tmp
 mkdir -p $tmp
@@ -41,102 +34,148 @@ unzip -o "$ZIPFILE" -d $tmp || abort "Failed to extract zip!"
 sleep 1
 
 ui_print " "
-ui_print "**********************************************"
-ui_print "Device: Nothing Phone 2 (Pong)"
-ui_print "Target NOS Build: <Mentioned in filename>"
-ui_print "**********************************************"
+ui_print "========================================="
+ui_print " Nothing Phone (2) Firmware Flasher"
+ui_print "========================================="
+ui_print " Device: Nothing Phone 2 (Pong)"
+ui_print " Target FW Build: Check filename"
+ui_print " "
+ui_print " Based on script by Wishmasterflo,"
+ui_print " Modified and adapted by spike0en."
+ui_print "========================================="
 ui_print " "
 ui_print "Continue? Vol+ yes, Vol- no"
-chooseport && flash=true || exit 0
+chooseport
+if [ $? -ne 0 ]; then
+  ui_print "User cancelled flashing."
+  rm -rf $tmp
+  exit 0
+fi
+ui_print "Proceeding with flash..."
+
+# Ask for target slots
+flash_target="both"
+ui_print " "
+ui_print "Select Target Slots:"
+ui_print " WARNING: Flashing a single slot is generally"
+ui_print "          not recommended unless you know exactly"
+ui_print "          what you are doing!"
+ui_print " "
+ui_print " -> Press Vol+ for BOTH Slots (Recommended)"
+ui_print " -> Press Vol- for SINGLE Slot"
+chooseport
+if [ $? -eq 1 ]; then
+  ui_print " "
+  ui_print "Select Single Slot Target:"
+  ui_print " -> Press Vol+ for Slot A"
+  ui_print " -> Press Vol- for Slot B"
+  chooseport
+  if [ $? -eq 0 ]; then
+    flash_target="a"
+    ui_print "Targeting SLOT A only."
+  else
+    flash_target="b"
+    ui_print "Targeting SLOT B only."
+  fi
+else
+  ui_print "Targeting BOTH slots A and B."
+fi
+ui_print " "
+
+# Function to flash a partition to both slots, prompting on error
+flash_partition() {
+  local partition_name=$1
+  local image_file=$2
+  local partition_path_a="/dev/block/bootdevice/by-name/${partition_name}_a"
+  local partition_path_b="/dev/block/bootdevice/by-name/${partition_name}_b"
+  local source_image="$tmp/firmware-update/$image_file"
+
+  ui_print " "
+  ui_print "Processing $partition_name..."
+
+  # Check if image file exists
+  if [ ! -f "$source_image" ]; then
+    ui_print "--> Error: Image file $source_image not found for $partition_name!"
+    ui_print "    Press Vol+ to skip flashing this partition and continue,"
+    ui_print "    Press Vol- to abort the entire script."
+    chooseport
+    if [ $? -ne 0 ]; then
+      abort "Aborting script due to missing image file and user choice."
+    else
+      ui_print "--> Skipping $partition_name due to missing image, continuing..."
+      return 0
+    fi
+  fi
+
+  # Flash Slot A
+  if [ "$flash_target" = "both" ] || [ "$flash_target" = "a" ]; then
+    ui_print "  Flashing $partition_name to slot A..."
+    dd if="$source_image" of="$partition_path_a" bs=4k
+    if [ $? -ne 0 ]; then
+      ui_print "--> Error flashing $partition_name to slot A!"
+      ui_print "    Press Vol+ to skip this partition and continue,"
+      ui_print "    Press Vol- to abort the entire script."
+      chooseport
+      if [ $? -ne 0 ]; then
+        abort "Aborting script due to slot A error and user choice."
+      else
+        ui_print "--> Continuing to next partition despite slot A error..."
+        return 0
+      fi
+    fi
+  else
+    ui_print "  Skipping slot A flash for $partition_name as requested."
+  fi
+
+  # Flash Slot B
+  if [ "$flash_target" = "both" ] || [ "$flash_target" = "b" ]; then
+    ui_print "  Flashing $partition_name to slot B..."
+    dd if="$source_image" of="$partition_path_b" bs=4k
+    if [ $? -ne 0 ]; then
+      ui_print "--> Error flashing $partition_name to slot B!"
+      ui_print "    Press Vol+ to skip this partition and continue,"
+      ui_print "    Press Vol- to abort the entire script."
+      chooseport
+      if [ $? -ne 0 ]; then
+        abort "Aborting script due to slot B error and user choice."
+      else
+        ui_print "--> Continuing to next partition despite slot B error..."
+        return 0
+      fi
+    fi
+  else
+      ui_print "  Skipping slot B flash for $partition_name as requested."
+  fi
+
+  # Confirmation message based on what was flashed
+  if [ "$flash_target" = "both" ]; then
+    ui_print "  $partition_name flashed successfully to both slots."
+  elif [ "$flash_target" = "a" ]; then
+    ui_print "  $partition_name flashed successfully to slot A."
+  elif [ "$flash_target" = "b" ]; then
+    ui_print "  $partition_name flashed successfully to slot B."
+  fi
+}
+
+# Define partition lists
+firmware_partitions="abl aop aop_config bluetooth cpucp devcfg dsp featenabler hyp imagefv keymaster modem multiimgoem multiimgqti qupfw qweslicstore shrm tz uefi uefisecapp xbl xbl_config xbl_ramdump"
+misc_partitions="boot dtbo vendor_boot vbmeta_vendor vbmeta_system"
 
 # Firmware partition images
-ui_print "Flashing Nothing OS firmware to both slots A and B..."
-ui_print "Updating abl..."
-dd if=/dev/tmp/firmware-update/abl.img of=/dev/block/bootdevice/by-name/abl_a bs=4k
-dd if=/dev/tmp/firmware-update/abl.img of=/dev/block/bootdevice/by-name/abl_b bs=4k
-ui_print "Updating aop..."
-dd if=/dev/tmp/firmware-update/aop.img of=/dev/block/bootdevice/by-name/aop_a bs=4k
-dd if=/dev/tmp/firmware-update/aop.img of=/dev/block/bootdevice/by-name/aop_b bs=4k
-ui_print "Updating aop_config..."
-dd if=/dev/tmp/firmware-update/aop_config.img of=/dev/block/bootdevice/by-name/aop_config_a bs=4k
-dd if=/dev/tmp/firmware-update/aop_config.img of=/dev/block/bootdevice/by-name/aop_config_b bs=4k
-ui_print "Updating bluetooth..."
-dd if=/dev/tmp/firmware-update/bluetooth.img of=/dev/block/bootdevice/by-name/bluetooth_a bs=4k
-dd if=/dev/tmp/firmware-update/bluetooth.img of=/dev/block/bootdevice/by-name/bluetooth_b bs=4k
-ui_print "Updating cpucp..."
-dd if=/dev/tmp/firmware-update/cpucp.img of=/dev/block/bootdevice/by-name/cpucp_a bs=4k
-dd if=/dev/tmp/firmware-update/cpucp.img of=/dev/block/bootdevice/by-name/cpucp_b bs=4k
-ui_print "Updating devcfg..."
-dd if=/dev/tmp/firmware-update/devcfg.img of=/dev/block/bootdevice/by-name/devcfg_a bs=4k
-dd if=/dev/tmp/firmware-update/devcfg.img of=/dev/block/bootdevice/by-name/devcfg_b bs=4k
-ui_print "Updating dsp..."
-dd if=/dev/tmp/firmware-update/dsp.img of=/dev/block/bootdevice/by-name/dsp_a bs=4k
-dd if=/dev/tmp/firmware-update/dsp.img of=/dev/block/bootdevice/by-name/dsp_b bs=4k
-ui_print "Updating featenabler..."
-dd if=/dev/tmp/firmware-update/featenabler.img of=/dev/block/bootdevice/by-name/featenabler_a bs=4k
-dd if=/dev/tmp/firmware-update/featenabler.img of=/dev/block/bootdevice/by-name/featenabler_b bs=4k
-ui_print "Updating hyp..."
-dd if=/dev/tmp/firmware-update/hyp.img of=/dev/block/bootdevice/by-name/hyp_a bs=4k
-dd if=/dev/tmp/firmware-update/hyp.img of=/dev/block/bootdevice/by-name/hyp_b bs=4k
-ui_print "Updating imagefv..."
-dd if=/dev/tmp/firmware-update/imagefv.img of=/dev/block/bootdevice/by-name/imagefv_a bs=4k
-dd if=/dev/tmp/firmware-update/imagefv.img of=/dev/block/bootdevice/by-name/imagefv_b bs=4k
-ui_print "Updating keymaster..."
-dd if=/dev/tmp/firmware-update/keymaster.img of=/dev/block/bootdevice/by-name/keymaster_a bs=4k
-dd if=/dev/tmp/firmware-update/keymaster.img of=/dev/block/bootdevice/by-name/keymaster_b bs=4k
-ui_print "Updating modem..."
-dd if=/dev/tmp/firmware-update/modem.img of=/dev/block/bootdevice/by-name/modem_a bs=4k
-dd if=/dev/tmp/firmware-update/modem.img of=/dev/block/bootdevice/by-name/modem_b bs=4k
-ui_print "Updating multiimgoem..."
-dd if=/dev/tmp/firmware-update/multiimgoem.img of=/dev/block/bootdevice/by-name/multiimgoem_a bs=4k
-dd if=/dev/tmp/firmware-update/multiimgoem.img of=/dev/block/bootdevice/by-name/multiimgoem_b bs=4k
-ui_print "Updating multiimgqti..."
-dd if=/dev/tmp/firmware-update/multiimgqti.img of=/dev/block/bootdevice/by-name/multiimgqti_a bs=4k
-dd if=/dev/tmp/firmware-update/multiimgqti.img of=/dev/block/bootdevice/by-name/multiimgqti_b bs=4k
-ui_print "Updating qupfw..."
-dd if=/dev/tmp/firmware-update/qupfw.img of=/dev/block/bootdevice/by-name/qupfw_a bs=4k
-dd if=/dev/tmp/firmware-update/qupfw.img of=/dev/block/bootdevice/by-name/qupfw_b bs=4k
-ui_print "Updating qweslicstore..."
-dd if=/dev/tmp/firmware-update/qweslicstore.img of=/dev/block/bootdevice/by-name/qweslicstore_a bs=4k
-dd if=/dev/tmp/firmware-update/qweslicstore.img of=/dev/block/bootdevice/by-name/qweslicstore_b bs=4k
-ui_print "Updating shrm..."
-dd if=/dev/tmp/firmware-update/shrm.img of=/dev/block/bootdevice/by-name/shrm_a bs=4k
-dd if=/dev/tmp/firmware-update/shrm.img of=/dev/block/bootdevice/by-name/shrm_b bs=4k
-ui_print "Updating tz..."
-dd if=/dev/tmp/firmware-update/tz.img of=/dev/block/bootdevice/by-name/tz_a bs=4k
-dd if=/dev/tmp/firmware-update/tz.img of=/dev/block/bootdevice/by-name/tz_b bs=4k
-ui_print "Updating uefi..."
-dd if=/dev/tmp/firmware-update/uefi.img of=/dev/block/bootdevice/by-name/uefi_a bs=4k
-dd if=/dev/tmp/firmware-update/uefi.img of=/dev/block/bootdevice/by-name/uefi_b bs=4k
-ui_print "Updating uefisecapp..."
-dd if=/dev/tmp/firmware-update/uefisecapp.img of=/dev/block/bootdevice/by-name/uefisecapp_a bs=4k
-dd if=/dev/tmp/firmware-update/uefisecapp.img of=/dev/block/bootdevice/by-name/uefisecapp_b bs=4k
-ui_print "Updating xbl..."
-dd if=/dev/tmp/firmware-update/xbl.img of=/dev/block/bootdevice/by-name/xbl_a bs=4k
-dd if=/dev/tmp/firmware-update/xbl.img of=/dev/block/bootdevice/by-name/xbl_b bs=4k
-ui_print "Updating xbl_config..."
-dd if=/dev/tmp/firmware-update/xbl_config.img of=/dev/block/bootdevice/by-name/xbl_config_a bs=4k
-dd if=/dev/tmp/firmware-update/xbl_config.img of=/dev/block/bootdevice/by-name/xbl_config_b bs=4k
+ui_print " "
+ui_print "Flashing Nothing OS firmware partitions..."
+for partition in $firmware_partitions; do
+  flash_partition $partition ${partition}.img
+done
 ui_print "Firmware flashing complete!"
 
 # Misc partition images
-ui_print "Flashing some additionally required partition images to both slots A and B..."
-ui_print "Updating boot..."
-dd if=/dev/tmp/firmware-update/boot.img of=/dev/block/bootdevice/by-name/boot_a bs=4k
-dd if=/dev/tmp/firmware-update/boot.img of=/dev/block/bootdevice/by-name/boot_b bs=4k
-ui_print "Updating dtbo..."
-dd if=/dev/tmp/firmware-update/dtbo.img of=/dev/block/bootdevice/by-name/dtbo_a bs=4k
-dd if=/dev/tmp/firmware-update/dtbo.img of=/dev/block/bootdevice/by-name/dtbo_b bs=4k
-ui_print "Updating vendor_boot..."
-dd if=/dev/tmp/firmware-update/vendor_boot.img of=/dev/block/bootdevice/by-name/vendor_boot_a bs=4k
-dd if=/dev/tmp/firmware-update/vendor_boot.img of=/dev/block/bootdevice/by-name/vendor_boot_b bs=4k
-ui_print "Updating vbmeta_vendor..."
-dd if=/dev/tmp/firmware-update/vbmeta_vendor.img of=/dev/block/bootdevice/by-name/vbmeta_vendor_a bs=4k
-dd if=/dev/tmp/firmware-update/vbmeta_vendor.img of=/dev/block/bootdevice/by-name/vbmeta_vendor_b bs=4k
-ui_print "Updating vbmeta_system..."
-dd if=/dev/tmp/firmware-update/vbmeta_system.img of=/dev/block/bootdevice/by-name/vbmeta_system_a bs=4k
-dd if=/dev/tmp/firmware-update/vbmeta_system.img of=/dev/block/bootdevice/by-name/vbmeta_system_b bs=4k
-ui_print "Flashing has been completed!"
+ui_print " "
+ui_print "Flashing miscellaneous partitions..."
+for partition in $misc_partitions; do
+  flash_partition $partition ${partition}.img
+done
+ui_print "Miscellaneous partition flashing complete!"
 
 # Cleanup tmp dir
 rm -rf /dev/tmp
