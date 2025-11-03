@@ -35,9 +35,9 @@ sleep 1
 
 ui_print " "
 ui_print "========================================="
-ui_print " Nothing Phone (2) Firmware Flasher"
+ui_print " OnePlus 13 Firmware Flasher"
 ui_print "========================================="
-ui_print " Device: Nothing Phone 2 (Pong)"
+ui_print " Device: OnePlus 13 (dodge)"
 ui_print " Target FW Build: Check filename"
 ui_print " "
 ui_print " Based on script by Wishmasterflo,"
@@ -53,33 +53,9 @@ if [ $? -ne 0 ]; then
 fi
 ui_print "Proceeding with flash..."
 
-# Ask for target slots
-flash_target="both"
+# Flash to both slots unconditionally
 ui_print " "
-ui_print "Select Target Slots:"
-ui_print " WARNING: Flashing a single slot is generally"
-ui_print "          not recommended unless you know exactly"
-ui_print "          what you are doing!"
-ui_print " "
-ui_print " -> Press Vol+ for BOTH Slots (Recommended)"
-ui_print " -> Press Vol- for SINGLE Slot"
-chooseport
-if [ $? -eq 1 ]; then
-  ui_print " "
-  ui_print "Select Single Slot Target:"
-  ui_print " -> Press Vol+ for Slot A"
-  ui_print " -> Press Vol- for Slot B"
-  chooseport
-  if [ $? -eq 0 ]; then
-    flash_target="a"
-    ui_print "Targeting SLOT A only."
-  else
-    flash_target="b"
-    ui_print "Targeting SLOT B only."
-  fi
-else
-  ui_print "Targeting BOTH slots A and B."
-fi
+ui_print "Flashing base fw to both slots..."
 ui_print " "
 
 # Function to flash a partition to both slots, prompting on error
@@ -88,7 +64,11 @@ flash_partition() {
   local image_file=$2
   local partition_path_a="/dev/block/bootdevice/by-name/${partition_name}_a"
   local partition_path_b="/dev/block/bootdevice/by-name/${partition_name}_b"
-  local source_image="$tmp/firmware-update/$image_file"
+  local base_dir="$tmp/firmware-update"
+  if [[ "$image_file" == "signal-fix-cn/"* ]]; then
+    base_dir="$tmp"
+  fi
+  local source_image="$base_dir/$image_file"
 
   ui_print " "
   ui_print "Processing $partition_name..."
@@ -108,63 +88,57 @@ flash_partition() {
   fi
 
   # Flash Slot A
-  if [ "$flash_target" = "both" ] || [ "$flash_target" = "a" ]; then
-    ui_print "  Flashing $partition_name to slot A..."
-    dd if="$source_image" of="$partition_path_a" bs=4k
+  ui_print "  Flashing $partition_name to slot A..."
+  dd if="$source_image" of="$partition_path_a" bs=4k
+  if [ $? -ne 0 ]; then
+    ui_print "--> Error flashing $partition_name to slot A!"
+    ui_print "    Press Vol+ to skip this partition and continue,"
+    ui_print "    Press Vol- to abort the entire script."
+    chooseport
     if [ $? -ne 0 ]; then
-      ui_print "--> Error flashing $partition_name to slot A!"
-      ui_print "    Press Vol+ to skip this partition and continue,"
-      ui_print "    Press Vol- to abort the entire script."
-      chooseport
-      if [ $? -ne 0 ]; then
-        abort "Aborting script due to slot A error and user choice."
-      else
-        ui_print "--> Continuing to next partition despite slot A error..."
-        return 0
-      fi
+      abort "Aborting script due to slot A error and user choice."
+    else
+      ui_print "--> Continuing to next partition despite slot A error..."
+      return 0
     fi
-  else
-    ui_print "  Skipping slot A flash for $partition_name as requested."
   fi
 
   # Flash Slot B
-  if [ "$flash_target" = "both" ] || [ "$flash_target" = "b" ]; then
-    ui_print "  Flashing $partition_name to slot B..."
-    dd if="$source_image" of="$partition_path_b" bs=4k
+  ui_print "  Flashing $partition_name to slot B..."
+  dd if="$source_image" of="$partition_path_b" bs=4k
+  if [ $? -ne 0 ]; then
+    ui_print "--> Error flashing $partition_name to slot B!"
+    ui_print "    Press Vol+ to skip this partition and continue,"
+    ui_print "    Press Vol- to abort the entire script."
+    chooseport
     if [ $? -ne 0 ]; then
-      ui_print "--> Error flashing $partition_name to slot B!"
-      ui_print "    Press Vol+ to skip this partition and continue,"
-      ui_print "    Press Vol- to abort the entire script."
-      chooseport
-      if [ $? -ne 0 ]; then
-        abort "Aborting script due to slot B error and user choice."
-      else
-        ui_print "--> Continuing to next partition despite slot B error..."
-        return 0
-      fi
+      abort "Aborting script due to slot B error and user choice."
+    else
+      ui_print "--> Continuing to next partition despite slot B error..."
+      return 0
     fi
-  else
-      ui_print "  Skipping slot B flash for $partition_name as requested."
   fi
 
-  # Confirmation message based on what was flashed
-  if [ "$flash_target" = "both" ]; then
-    ui_print "  $partition_name flashed successfully to both slots."
-  elif [ "$flash_target" = "a" ]; then
-    ui_print "  $partition_name flashed successfully to slot A."
-  elif [ "$flash_target" = "b" ]; then
-    ui_print "  $partition_name flashed successfully to slot B."
-  fi
+  # Confirmation message
+  ui_print "  $partition_name flashed successfully to both slots."
 }
 
 # Define partition lists
-firmware_partitions="abl aop aop_config bluetooth cpucp devcfg dsp featenabler hyp imagefv keymaster modem multiimgoem multiimgqti qupfw qweslicstore shrm tz uefi uefisecapp xbl xbl_config xbl_ramdump"
-misc_partitions="boot dtbo vendor_boot vbmeta_vendor vbmeta_system"
+firmware_partitions="abl aop_config aop bluetooth cpucp cpucp_dtb devcfg dsp engineering_cdt featenabler hyp imagefv keymaster modem oplus_sec oplusstanvbk pdp pdp_cdb pvmfw qupfw shrm soccp_dcd soccp_debug splash spuservice tz uefi uefisecapp xbl_config xbl_ramdump xbl"
+misc_partitions="boot init_boot vendor_boot dtbo vbmeta vbmeta_system vbmeta_vendor"
 
 # Firmware partition images
 ui_print " "
-ui_print "Flashing Nothing OS firmware partitions..."
+if [ "$IS_CN_MODEL" = "true" ]; then
+  ui_print "Flashing Color OS firmware partitions..."
+else
+  ui_print "Flashing OxygenOS firmware partitions..."
+fi
 for partition in $firmware_partitions; do
+  if [ "$IS_CN_MODEL" = "true" ] && [ "$partition" = "oplusstanvbk" ]; then
+    ui_print "  Skipping oplusstanvbk for CN model."
+    continue
+  fi
   flash_partition $partition ${partition}.img
 done
 ui_print "Firmware flashing complete!"
@@ -177,12 +151,32 @@ for partition in $misc_partitions; do
 done
 ui_print "Miscellaneous partition flashing complete!"
 
+# Device model detection for conditional flashing
+DEVICE_PRJNAME=$(getprop ro.boot.prjname)
+IS_CN_MODEL=false
+if [ "$DEVICE_PRJNAME" = "23821" ]; then
+  IS_CN_MODEL=true
+  ui_print " "
+  ui_print "========================================="
+  ui_print " CN model detected! This requires signal"
+  ui_print " fix if you are currently running OxygenOS."
+  ui_print "========================================="
+  ui_print " "
+fi
+
+# Fix signal for CN models
+if [ "$IS_CN_MODEL" = "true" ]; then
+  ui_print " "
+  ui_print "Flashing CN model specific signal fix running OxygenOS..."
+  flash_partition "oplusstanvbk" "signal-fix-cn/oplusstanvbk.img"
+  ui_print "CN model signal fix has been applied!"
+fi
+
 # Cleanup tmp dir
 rm -rf /dev/tmp
 
 # Final instruction
 ui_print " "
-ui_print "If you want to flash a new ROM do that now before rebooting."
-ui_print "NothingMuchROM users may also flash super and vbmeta (optional)."
+ui_print "You may now proceed with sideloading the ROM!"
 
 exit 0
