@@ -4,15 +4,23 @@
 
 set -e
 
+# Function to prepare a directory (delete if exists, then create)
+prepare_dir() {
+  local dir_path=$1
+  local dir_name=$2
+  if [ -d "$dir_path" ]; then
+      echo "Deleting existing $dir_name directory..."
+      rm -rf "$dir_path"
+  fi
+  mkdir -p "$dir_path"
+  echo "$dir_name directory prepared successfully."
+}
+
 echo "--- Running Pong Firmware Repacker Script ---"
 echo
 
-if [ -z "$POST_OTA_VERSION" ]; then
-  echo "Error: POST_OTA_VERSION environment variable is not set."
-  exit 1
-fi
-if [ -z "$NOS_VERSION" ]; then
-  echo "Error: NOS_VERSION environment variable is not set."
+if [ -z "$FW_VERSION" ]; then
+  echo "Error: FW_VERSION environment variable is not set."
   exit 1
 fi
 if [ -z "$BOOT_URL" ]; then
@@ -23,33 +31,28 @@ if [ -z "$FIRMWARE_URL" ]; then
   echo "Error: FIRMWARE_URL environment variable is not set."
   exit 1
 fi
+if [ -z "$SIGNAL_FIX_CN_URL" ]; then
+  echo "Error: SIGNAL_FIX_CN_URL environment variable is not set."
+  exit 1
+fi
 
-echo "POST OTA Version: $POST_OTA_VERSION"
-echo "NOS Version: $NOS_VERSION"
+echo "Firmware Version: $FW_VERSION"
 echo "Boot URL: $BOOT_URL"
 echo "Firmware URL: $FIRMWARE_URL"
+echo "Signal Fix CN URL: $SIGNAL_FIX_CN_URL"
 echo
 
 SCRIPT_DIR=$(pwd)
 FIRMWARE_DIR="$SCRIPT_DIR/firmware-update"
 TMP_DIR="$SCRIPT_DIR/tmp"
 META_INF_DIR="$SCRIPT_DIR/META-INF"
+SIGNAL_FIX_CN_DIR="$SCRIPT_DIR/signal-fix-cn"
 
 echo "--- Preparing Required Directories ---"
 
-if [ -d "$FIRMWARE_DIR" ]; then
-    echo "Deleting existing firmware-update directory..."
-    rm -rf "$FIRMWARE_DIR"
-fi
-mkdir -p "$FIRMWARE_DIR"
-echo "firmware-update directory prepared successfully."
-
-if [ -d "$TMP_DIR" ]; then
-    echo "Deleting existing tmp directory..."
-    rm -rf "$TMP_DIR"
-fi
-mkdir -p "$TMP_DIR"
-echo "Temporary directory prepared successfully."
+prepare_dir "$FIRMWARE_DIR" "firmware-update"
+prepare_dir "$TMP_DIR" "Temporary"
+prepare_dir "$SIGNAL_FIX_CN_DIR" "signal-fix-cn"
 echo
 
 if [ ! -d "$META_INF_DIR" ] || [ ! -f "$META_INF_DIR/com/google/android/update-binary" ] || [ ! -f "$META_INF_DIR/com/google/android/updater-script" ]; then
@@ -77,6 +80,14 @@ if [ $? -ne 0 ] || [ ! -f "$TMP_DIR/firmware.7z" ]; then
     exit 1
 fi
 echo "Firmware category file downloaded successfully."
+
+echo "Downloading CN signal fix file (oplusstanvbk.img.7z) from provided URL..."
+aria2c -x5 -d "$TMP_DIR" -o "signal_fix_cn.7z" "$SIGNAL_FIX_CN_URL"
+if [ $? -ne 0 ] || [ ! -f "$TMP_DIR/signal_fix_cn.7z" ]; then
+    echo "Failed to download CN signal fix file using aria2c. Exiting..."
+    exit 1
+fi
+echo "CN signal fix file downloaded successfully."
 echo
 
 echo "--- Extracting Downloaded Files ---"
@@ -96,6 +107,20 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 echo "Firmware file extracted successfully."
+
+echo "Extracting CN signal fix file..."
+7z x "$TMP_DIR/signal_fix_cn.7z" -o"$TMP_DIR" -y oplusstanvbk.img > /dev/null
+if [ $? -ne 0 ]; then
+    echo "Failed to extract CN signal fix file. Exiting..."
+    exit 1
+fi
+echo "CN signal fix file extracted successfully."
+mv "$TMP_DIR/oplusstanvbk.img" "$SIGNAL_FIX_CN_DIR/"
+if [ $? -ne 0 ]; then
+    echo "Failed to move oplusstanvbk.img to signal-fix-cn directory. Exiting..."
+    exit 1
+fi
+echo "oplusstanvbk.img moved to signal-fix-cn directory."
 echo
 
 echo "--- Removing recovery and vbmeta Image Files ---"
@@ -133,10 +158,10 @@ echo
 
 echo "--- Creating Flashable Firmware ZIP Package ---"
 
-ZIP_NAME="FW_${POST_OTA_VERSION}_${NOS_VERSION}.zip"
+ZIP_NAME="${FW_VERSION}.zip"
 echo "Creating zip file: $ZIP_NAME"
 cd "$SCRIPT_DIR"
-7z a -tzip -mx=6 "$ZIP_NAME" firmware-update/ META-INF/
+7z a -tzip -mx=6 "$ZIP_NAME" firmware-update/ META-INF/ signal-fix-cn/
 
 if [ $? -ne 0 ]; then
     echo "Failed to create zip file. Exiting..."

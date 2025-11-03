@@ -6,20 +6,20 @@ name: Pong Flashable Firmware
 on:
   workflow_dispatch:
     inputs:
-      post_ota_version:
-        description: 'POST_OTA_Version of Target Firmware (e.g., Pong_V3.0-241028-1925)'
-        required: true
-        type: string
-      nos_version:
-        description: 'Nothing OS Version (e.g., 3.0, 2.5.2A)'
+      fw_version:
+        description: 'Target Firmware (e.g., PJZ110_16.0.0.212(CN01) / CPH2649_16.0.0.210(EX01) etc)'
         required: true
         type: string
       boot_url:
-        description: 'Direct URL to *-image-boot.7z (Find in release assets at https://github.com/spike0en/nothing_archive)'
+        description: 'Direct URL to *-image-boot.7z (Find in release assets at https://github.com/spike0en/oneplus_archive)'
         required: true
         type: string
       firmware_url:
-        description: 'Direct URL to *-image-firmware.7z (Find in release assets at https://github.com/spike0en/nothing_archive)'
+        description: 'Direct URL to *-image-firmware.7z (Find in release assets at https://github.com/spike0en/oneplus_archive)'
+        required: true
+        type: string
+      signal_fix_cn_url:
+        description: 'Direct URL to *-image-firmware.7z for PJZ110 model (Find in release assets at https://github.com/spike0en/oneplus_archive/releases?q=PJZ110&expanded=true)'
         required: true
         type: string
 
@@ -45,17 +45,17 @@ jobs:
         id: repack
         run: ./scripts/repack.sh
         env:
-          POST_OTA_VERSION: ${{ inputs.post_ota_version }}
-          NOS_VERSION: ${{ inputs.nos_version }}
+          FW_VERSION: ${{ inputs.fw_version }}
           BOOT_URL: ${{ inputs.boot_url }}
           FIRMWARE_URL: ${{ inputs.firmware_url }}
+          SIGNAL_FIX_CN_URL: ${{ inputs.signal_fix_cn_url }}
 
       - name: Finalizing Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ inputs.post_ota_version }}_${{ inputs.nos_version }}
-          name: ${{ inputs.post_ota_version }}_${{ inputs.nos_version }}
-          body: ${{ inputs.post_ota_version }}_${{ inputs.nos_version }}
+          tag_name: ${{ inputs.fw_version }}
+          name: ${{ inputs.fw_version }}
+          body: ${{ inputs.fw_version }}
           files: ${{ steps.repack.outputs.zip_name }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
